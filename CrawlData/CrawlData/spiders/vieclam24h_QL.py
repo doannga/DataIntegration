@@ -20,7 +20,7 @@ class Vieclam24hQlSpider(scrapy.Spider):
 
         next_pages = response.xpath('//li[@class="next"]/a/@href').extract()
         next_page = next_pages[len(next_pages) - 1]
-        print("ajdnjhdf" + next_page)
+        
         if next_page is not None:
             next_page = response.urljoin(next_page)
             yield scrapy.Request(next_page, callback=self.parse)
@@ -32,10 +32,10 @@ class Vieclam24hQlSpider(scrapy.Spider):
         if len(title) > 0:
         	self.item["title"] = title[0]
 
-        # #Cong ty
-        # company = response.xpath('//p[@class="font16"]')
-        # if len(company) > 0:
-        #     self.item["company"] = company[0]
+        #Cong ty
+        company = response.xpath('//p[@class="font16"]//a[@class="text_grey3"]/text()').extract()
+        if len(company) > 0:
+            self.item["company"] = company[0]
         #Luong
         salary = response.xpath('//div[@class="col-xs-6"]/p')
         if len(salary) > 0:
