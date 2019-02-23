@@ -7,5 +7,15 @@
 
 
 class CrawldataPipeline(object):
+	connection_name = 'News'
+	def __init__(self):
+		connection = pymongo.MongoClient(
+            settings['MONGODB_SERVER'],
+            settings['MONGODB_PORT']
+        )
+        db = connection[settings['MONGODB_DB']]
+        self.collection = db[settings['MONGODB_COLLECTION']]
+		pass
     def process_item(self, item, spider):
+    	
         return item

@@ -9,6 +9,7 @@ class Vieclam24hQlSpider(scrapy.Spider):
     name = 'vieclam24h_QL'
     start_urls = [
         'https://vieclam24h.vn/tim-kiem-viec-lam-nhanh/?hdn_nganh_nghe_cap1=&hdn_dia_diem=&hdn_tu_khoa=&hdn_hinh_thuc=&hdn_cap_bac=',
+        
     ]
 
     def parse(self, response):
