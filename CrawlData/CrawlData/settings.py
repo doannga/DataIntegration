@@ -21,6 +21,11 @@ FEED_EXPORT_ENCODING = 'utf-8'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
+ITEM_PIPELINES = {
+    'CrawlData.pipelines.MongoPipeline': 300,
+}
+MONGO_URI='localhost:27017'
+MONGO_DATABASE='recruitment_news'
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
