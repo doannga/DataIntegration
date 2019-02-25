@@ -5,12 +5,17 @@ import re
 import hashlib
 import pybloom_live
 import pymongo
+from pyvi import ViTokenizer
+import pickle
+import numpy as np
+from sklearn.metrics import jaccard_similarity_score
 
 class CareerbuilderSpider(scrapy.Spider):
     name = 'careerbuilder'
     start_urls = ['https://careerbuilder.vn/viec-lam/tat-ca-viec-lam-vi.html/']
     ur = pybloom_live.BloomFilter(capacity=2097152, error_rate=0.005)
-
+    collection_name = 'News'
+    
     def parse(self, response):
         for tn in response.xpath('//h3[@class="job"]'):
             src = tn.xpath('a/@href').extract_first()
@@ -19,7 +24,7 @@ class CareerbuilderSpider(scrapy.Spider):
             if add_url is False:
                 yield scrapy.Request(src, callback=self.parse_src) 
                 pass
-            
+
 
         next_pages = response.xpath('//a[@class="right"]/@href').extract()
         next_page = next_pages[len(next_pages) - 1]
@@ -28,39 +33,70 @@ class CareerbuilderSpider(scrapy.Spider):
             yield scrapy.Request(next_page, callback=self.parse)
 
     def parse_src(self, response):
-    	self.item = JobItem()
-        print(response.request.url)
-
+        self.item = JobItem()
         self.item["url"] = response.request.url
         #Tieu de
         title = response.xpath('//div[@class="top-job-info"]/h1/text()').extract()
         print("Nga")
-        title_ = re.sub('[.\?\!\#\@\-\[\]\(\)\/\+]', "",title[0])
-        print(title_)
+        title_ = re.sub('[\?\!\#\@\-\[\]\(\)\/\+]', "",title[0])
+        # tach tu
+        title_1 = ViTokenizer.tokenize(title_)
+        # phan cum=> ten cluster
+        clustering = pickle.load(open('/home/nga/Documents/Project/DataIntegration/preprocess/clustering','rb'))
+        cluter_title = clustering.predict([title_1])[0]
+        print(clustering.predict([title_1])[0])
+        
+        # lay tat ca title trong db co cung cai cum ben tren
+        client = pymongo.MongoClient(self.settings.get("MONGO_URI"))
+        db = client[self.settings.get("MONGO_DATABASE")]
+        collection = db[self.collection_name]
+        title_in_db = collection.find({"cluster" : cluter_title},{"title":1,"_id":0})
+        # tinh jacacd. JC_score > 0.8 va max(JC_score) = tuong tu. thi ko luu lai vao db
+        #number_news = collection.count({"cluster" : cluter_title},{"title":1,"_id":0})
+        number_news = collection.count()
+
+        print("NGa")
+        print(number_news)
+        print("Nga")
+        max_score = 0
+        if number_news == 0:
+            self.item["title"] = title[0]
+            self.item["cluster"] = cluter_title
+            pass
+        else:
+            for each_title in title_in_db:
+                each_title_ = ViTokenizer.tokenize(each_title)
+                JC_score = jaccard_similarity_score(title_1, each_title_)
+                if(JC_score > max_score):
+                    max_score = JC_score
+            if max_score < 0.85:
+                self.item["title"] = title[0]
+                self.item["cluster"] = cluter_title
+        #print(title_)
         # title_items = title_.split(" ")
         # m = hashlib.md5()
         # for ite in title_items:
         #     m.update(ite)
         # print(m.hexdigest())
-        print("nga")
-        if len(title) > 0:
-            self.item["title"] = title[0]
-        else:
-            self.item["title"] = "" 
+        # print("nga")
+        # if len(title) > 0:
+        #     self.item["title"] = title[0]
+        # else:
+        #     self.item["title"] = "" 
         # Ten cong ty
-    	company = response.xpath('//div[@class="tit_company"]/text()').extract()
-    	if len(company) > 0:
-    		self.item["company"] = company
-    	else:
-    		self.item["company"] = ""
-    		pass
+        company = response.xpath('//div[@class="tit_company"]/text()').extract()
+        if len(company) > 0:
+            self.item["company"] = company
+        else:
+            self.item["company"] = ""
+            pass
     	# Luong
-    	salary = response.xpath('(//p[@class="fl_right"])[2]//label/text()').extract()
-    	if len(salary) > 0:
-    		self.item["salary"] = salary
-    	else:
-    		self.item["salary"] = ""
-    		pass
+        salary = response.xpath('(//p[@class="fl_right"])[2]//label/text()').extract()
+        if len(salary) > 0:
+            self.item["salary"] = salary[0]
+        else:
+            self.item["salary"] = ""
+            pass
     	#Kinh nghiem    
         experience = response.xpath('(//p[@class="fl_left"])/text()').extract()
         if len(experience) > 0:
@@ -71,7 +107,7 @@ class CareerbuilderSpider(scrapy.Spider):
         if len(diploma) > 0:
             self.item["diploma"] = diploma[0][14:]
             pass
-         #So luong
+         #So 0
         amount = ""
         self.item["amount"] = amount
          #Nganh nghe
@@ -114,7 +150,7 @@ class CareerbuilderSpider(scrapy.Spider):
             else:
                 sex_string = ""
                 self.item["sex"] = sex_string
-            pass
+                pass
         age = response.xpath('(//div[@class="content_fck"]//ul//li)[2]/text()').extract() 
         if len(age) > 0:
             self.item["age"] = age[0][14:]

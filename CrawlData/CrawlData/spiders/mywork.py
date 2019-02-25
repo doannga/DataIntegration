@@ -18,13 +18,13 @@ class MyworkSpider(scrapy.Spider):
         if next_page is not None:
             next_page = response.urljoin(next_page)
             yield scrapy.Request(next_page, callback=self.parse)
-        pass
+            pass
     def parse_src(self, response):
-    	self.item = JobItem()
+        self.item = JobItem()
         self.item["url"] = response.request.url
         title = response.xpath('//h1[@class="main-title"]//span/text()').extract()
         if len(title) > 0:
-        	self.item["title"] = title[0]
+            self.item["title"] = title[0]
 
         #Cong ty
         company = response.xpath('(//h2[@class="desc-for-title mb-15"]//span)[1]/text()').extract()
@@ -104,10 +104,10 @@ class MyworkSpider(scrapy.Spider):
         else:
         	require_skill11 = ""
         if len(require_skill2) > 0:
-        	require_skill22 = require_skill2[0]
-        	pass
+            require_skill22 = require_skill2[0]
+            pass
         else:
-        	require_skill22 = ""
+            require_skill22 = ""
         self.item["require_skill"] = require_skill11 + "\n" +require_skill22
         #Thong tin lien he
         per_contact = response.xpath('(//div[@class="col-md-6 col-lg-9 item"]//span)[1]/text()').extract()
@@ -141,4 +141,4 @@ class MyworkSpider(scrapy.Spider):
             self.item["created"] = created[0]
         if self.item["title"] != "":
             yield self.item
-    	pass
+            pass

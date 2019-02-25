@@ -9,25 +9,25 @@ class TimviecnhanhSpider(scrapy.Spider):
 
     def parse(self, response):
 
-    	for tn in response.xpath('//td[@class="block-item w55"]'):
-    		src = tn.xpath('a/@href').extract_first()
-    		src = response.urljoin(src)
-    		yield scrapy.Request(src, callback=self.parse_src)
+        for tn in response.xpath('//td[@class="block-item w55"]'):
+            src = tn.xpath('a/@href').extract_first()
+            src = response.urljoin(src)
+            yield scrapy.Request(src, callback=self.parse_src)
+
 
         next_pages = response.xpath('//a[@class="next item"]/@href').extract()
         next_page = next_pages[len(next_pages) - 1]
-        
+
         if next_page is not None:
             next_page = response.urljoin(next_page)
             yield scrapy.Request(next_page, callback=self.parse)
-    
+
     def parse_src(self, response):
-    	self.item = JobItem()
+        self.item = JobItem()
         self.item["url"] = response.request.url
-        
         title = response.xpath('//h1[@class="title font-roboto text-primary"]//span/text()').extract()
         if len(title) > 0:
-        	self.item["title"] = title[0]
+            self.item["title"] = title[0]
 
         #Cong ty
         company = response.xpath('//div[@class="col-xs-6 p-r-10 offset10"]//h3//a/text()').extract()
@@ -43,7 +43,7 @@ class TimviecnhanhSpider(scrapy.Spider):
         if len(experience) > 0:
             self.item["experience"] = experience[0].strip()
             pass
-         # Bang cap
+        # Bang cap
         diploma = response.xpath('((//li[@class="m-b-5"])[3]/text())[2]').extract()
         if len(diploma) > 0:
             self.item["diploma"] = diploma[0].strip()
@@ -138,4 +138,3 @@ class TimviecnhanhSpider(scrapy.Spider):
         if self.item["title"] != "":
             yield self.item
 
-    	pass

@@ -11,6 +11,7 @@ import scrapy
 class JobItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
+    cluster = scrapy.Field()
     url = scrapy.Field()
     title = scrapy.Field()  #Tieu de
     company = scrapy.Field()
