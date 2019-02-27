@@ -45,6 +45,9 @@ class CareerbuilderSpider(scrapy.Spider):
         clustering = pickle.load(open('/home/nga/Documents/Project/DataIntegration/preprocess/clustering','rb'))
         cluter_title = clustering.predict([title_1])[0]
         print(clustering.predict([title_1])[0])
+        print(type(clustering.predict([title_1])[0]))
+        cluter_title = np.uint32(0).item()
+        print(type(cluter_title))
         
         # lay tat ca title trong db co cung cai cum ben tren
         client = pymongo.MongoClient(self.settings.get("MONGO_URI"))
@@ -54,10 +57,7 @@ class CareerbuilderSpider(scrapy.Spider):
         # tinh jacacd. JC_score > 0.8 va max(JC_score) = tuong tu. thi ko luu lai vao db
         #number_news = collection.count({"cluster" : cluter_title},{"title":1,"_id":0})
         number_news = collection.count()
-
-        print("NGa")
         print(number_news)
-        print("Nga")
         max_score = 0
         if number_news == 0:
             self.item["title"] = title[0]
@@ -65,9 +65,12 @@ class CareerbuilderSpider(scrapy.Spider):
             pass
         else:
             for each_title in title_in_db:
-                each_title_ = ViTokenizer.tokenize(each_title)
-                JC_score = jaccard_similarity_score(title_1, each_title_)
-                if(JC_score > max_score):
+                print(title_1)
+                print(each_title['title'])
+                each_title_ = ViTokenizer.tokenize(each_title['title'])
+                JC_score = self.jaccard(title_1,each_title_)
+                print(JC_score)
+                if JC_score > max_score:
                     max_score = JC_score
             if max_score < 0.85:
                 self.item["title"] = title[0]
@@ -203,4 +206,18 @@ class CareerbuilderSpider(scrapy.Spider):
             self.item["created"] = created[0]
         if self.item["title"] != "":
             yield self.item
+    # def jaccard_similarity(list1, list2):
+    #     intersection = len(list(set(list1).intersection(list2)))
+    #     print(list(set(list1).intersection(list2)))
+    #     union = (len(list1) + len(list2)) - intersection
+    #     return float(intersection / union)
+    # def jaccard_similarity(list1, list2):
+    #     s1 = set(list1)
+    #     s2 = set(list2)
+    #     return len(s1.intersection(s2)) / len(s1.union(s2))
+    def jaccard(self, str1, str2):
+        str1 = set(str1.split())
+        str2 = set(str2.split())
+        return float(len(str1 & str2)) / len(str1 | str2)
+
 
