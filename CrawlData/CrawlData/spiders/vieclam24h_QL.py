@@ -2,6 +2,7 @@
 import scrapy
 from CrawlData.items import JobItem
 import re
+import time
 
 
 
@@ -13,6 +14,8 @@ class Vieclam24hQlSpider(scrapy.Spider):
     ]
 
     def parse(self, response):
+        # Time start
+        print(time.strftime("%H:%M:%S", time.localtime()))
         
         for tn in response.xpath('//div[@class="list-items "]/div/div/span'):
             src = tn.xpath('a/@href').extract_first()
@@ -25,7 +28,8 @@ class Vieclam24hQlSpider(scrapy.Spider):
         if next_page is not None:
             next_page = response.urljoin(next_page)
             yield scrapy.Request(next_page, callback=self.parse)
-
+        # Time end
+        print(time.strftime("%H:%M:%S", time.localtime()))
     def parse_src(self, response):
         self.item = JobItem()
         self.item["url"] = response.request.url
@@ -67,7 +71,7 @@ class Vieclam24hQlSpider(scrapy.Spider):
          #Noi lam viec
         address = response.xpath('//span[@class="pl_28"]//a[@class="job_value text_pink"]/text()').extract()
         if len(address) > 0:
-            self.item["address"] = address[0]
+            self.item["address"] = address
             pass
          # Chuc vu   
         position = response.xpath('((//div[@class="col-xs-6"])[2]//span[@class="pl_28"])[2]//span[@class="job_value"]/text()').extract()

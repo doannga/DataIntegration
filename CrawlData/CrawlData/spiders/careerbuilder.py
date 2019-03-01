@@ -9,6 +9,7 @@ from pyvi import ViTokenizer
 import pickle
 import numpy as np
 from sklearn.metrics import jaccard_similarity_score
+import time
 
 class CareerbuilderSpider(scrapy.Spider):
     name = 'careerbuilder'
@@ -17,6 +18,8 @@ class CareerbuilderSpider(scrapy.Spider):
     collection_name = 'News'
     
     def parse(self, response):
+        # Time start
+        print(time.strftime("%H:%M:%S", time.localtime()))
         for tn in response.xpath('//h3[@class="job"]'):
             src = tn.xpath('a/@href').extract_first()
             src = response.urljoin(src)
@@ -31,68 +34,56 @@ class CareerbuilderSpider(scrapy.Spider):
         if next_page is not None:
             next_page = response.urljoin(next_page)
             yield scrapy.Request(next_page, callback=self.parse)
-
+        # Time end
+        print(time.strftime("%H:%M:%S", time.localtime()))
     def parse_src(self, response):
         self.item = JobItem()
         self.item["url"] = response.request.url
         #Tieu de
         title = response.xpath('//div[@class="top-job-info"]/h1/text()').extract()
-        print("Nga")
         title_ = re.sub('[\?\!\#\@\-\[\]\(\)\/\+]', "",title[0])
+        company = response.xpath('//div[@class="tit_company"]/text()').extract()
+        company_tokens = ViTokenizer.tokenize(company[0]) 
         # tach tu
         title_1 = ViTokenizer.tokenize(title_)
         # phan cum=> ten cluster
         clustering = pickle.load(open('/home/nga/Documents/Project/DataIntegration/preprocess/clustering','rb'))
         cluter_title = clustering.predict([title_1])[0]
-        print(clustering.predict([title_1])[0])
-        print(type(clustering.predict([title_1])[0]))
-        cluter_title = np.uint32(0).item()
-        print(type(cluter_title))
+        cluter_title = cluter_title.tolist()
+        
         
         # lay tat ca title trong db co cung cai cum ben tren
         client = pymongo.MongoClient(self.settings.get("MONGO_URI"))
         db = client[self.settings.get("MONGO_DATABASE")]
         collection = db[self.collection_name]
-        title_in_db = collection.find({"cluster" : cluter_title},{"title":1,"_id":0})
+        title_in_db = collection.find({"cluster" : cluter_title},{"title":1,"company":1, "_id":0})
         # tinh jacacd. JC_score > 0.8 va max(JC_score) = tuong tu. thi ko luu lai vao db
         #number_news = collection.count({"cluster" : cluter_title},{"title":1,"_id":0})
         number_news = collection.count()
         print(number_news)
-        max_score = 0
+        max_score_title = 0
+        max_score_company = 0
         if number_news == 0:
             self.item["title"] = title[0]
             self.item["cluster"] = cluter_title
+            self.item["company"] = company[0]
             pass
         else:
             for each_title in title_in_db:
-                print(title_1)
-                print(each_title['title'])
                 each_title_ = ViTokenizer.tokenize(each_title['title'])
-                JC_score = self.jaccard(title_1,each_title_)
-                print(JC_score)
-                if JC_score > max_score:
-                    max_score = JC_score
-            if max_score < 0.85:
+                each_company = ViTokenizer.tokenize(each_title['company'])
+                JC_score_title = self.jaccard(title_1,each_title_)
+                print(JC_score_title)
+                JC_score_company = self.jaccard(company_tokens,each_company)
+                if JC_score_title > max_score_title:
+                    max_score_title = JC_score_title
+                if JC_score_company > max_score_company:
+                    max_score_company = JC_score_company
+            if max_score_title < 0.85 and max_score_company < 0.8:
                 self.item["title"] = title[0]
                 self.item["cluster"] = cluter_title
-        #print(title_)
-        # title_items = title_.split(" ")
-        # m = hashlib.md5()
-        # for ite in title_items:
-        #     m.update(ite)
-        # print(m.hexdigest())
-        # print("nga")
-        # if len(title) > 0:
-        #     self.item["title"] = title[0]
-        # else:
-        #     self.item["title"] = "" 
-        # Ten cong ty
-        company = response.xpath('//div[@class="tit_company"]/text()').extract()
-        if len(company) > 0:
-            self.item["company"] = company
-        else:
-            self.item["company"] = ""
-            pass
+                self.item["company"] = company[0]
+        
     	# Luong
         salary = response.xpath('(//p[@class="fl_right"])[2]//label/text()').extract()
         if len(salary) > 0:
@@ -121,7 +112,7 @@ class CareerbuilderSpider(scrapy.Spider):
          #Noi lam viec
         address = response.xpath('(//p[@class="fl_left"])[1]//b//a/text()').extract()
         if len(address) > 0:
-            self.item["address"] = address[0]
+            self.item["address"] = address
             pass
          # Chuc vu   
         position = response.xpath('(//p[@class="fl_right"])[1]//label/text()').extract()
@@ -206,18 +197,12 @@ class CareerbuilderSpider(scrapy.Spider):
             self.item["created"] = created[0]
         if self.item["title"] != "":
             yield self.item
-    # def jaccard_similarity(list1, list2):
-    #     intersection = len(list(set(list1).intersection(list2)))
-    #     print(list(set(list1).intersection(list2)))
-    #     union = (len(list1) + len(list2)) - intersection
-    #     return float(intersection / union)
-    # def jaccard_similarity(list1, list2):
-    #     s1 = set(list1)
-    #     s2 = set(list2)
-    #     return len(s1.intersection(s2)) / len(s1.union(s2))
     def jaccard(self, str1, str2):
         str1 = set(str1.split())
         str2 = set(str2.split())
         return float(len(str1 & str2)) / len(str1 | str2)
+    def tach_tu(self, text):
+        text_tokenize = ViTokenizer.tokenize(text)
+        return text_tokenize
 
 
