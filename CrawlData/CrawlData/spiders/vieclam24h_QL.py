@@ -3,19 +3,48 @@ import scrapy
 from CrawlData.items import JobItem
 import re
 import time
-
-
-
+from pyvi import ViTokenizer
+from py_stringmatching.similarity_measure.soft_tfidf import SoftTfIdf
+from py_stringmatching.similarity_measure.cosine import Cosine
+import os
+import pymongo
 class Vieclam24hQlSpider(scrapy.Spider):
     name = 'vieclam24h_QL'
     start_urls = [
-        'https://vieclam24h.vn/tim-kiem-viec-lam-nhanh/?hdn_nganh_nghe_cap1=&hdn_dia_diem=&hdn_tu_khoa=&hdn_hinh_thuc=&hdn_cap_bac=',
-        
+        'https://vieclam24h.vn/tim-kiem-viec-lam-nhanh/?hdn_nganh_nghe_cap1=&hdn_dia_diem=&hdn_tu_khoa=&hdn_hinh_thuc=&hdn_cap_bac=',   
     ]
+    cookies = [
+        {
+            'gate_nganh': 14,
+            '_gid': 'GA1.2.188974254.1551174426',
+            '_ga': 'GA1.2.1690984599.1551174426',
+            'gate': 'vlql'
+        },
+        {
+            'gate_nganh': 14,
+            '_gid': 'GA1.2.188974254.1551174426',
+            '_ga': 'GA1.2.1690984599.1551174426',
+            'gate': 'vlcm'
+        },
+        {
+            'gate_nganh': 14,
+            '_gid': 'GA1.2.188974254.1551174426',
+            '_ga': 'GA1.2.1690984599.1551174426',
+            'gate': 'ldpt'
+        },
+        {
+            'gate_nganh': 14,
+            '_gid': 'GA1.2.188974254.1551174426',
+            '_ga': 'GA1.2.1690984599.1551174426',
+            'gate': 'sv'
+        }
 
+    ]
+    collection_name = 'News'
+    JACCARD_MEASURE = 0.7
+    PREFIX_FILTERING = 2
+    SIMILARITY_THRESHOLD = 0.75
     def parse(self, response):
-        # Time start
-        print(time.strftime("%H:%M:%S", time.localtime()))
         
         for tn in response.xpath('//div[@class="list-items "]/div/div/span'):
             src = tn.xpath('a/@href').extract_first()
@@ -34,9 +63,33 @@ class Vieclam24hQlSpider(scrapy.Spider):
         self.item = JobItem()
         self.item["url"] = response.request.url
         title = response.xpath('//div[@class="col-xs-12"]/h1[@class="text_blue font28 mb_10 mt_20 fws title_big"]/text()').extract()
-        if len(title) > 0:
-        	self.item["title"] = title[0]
-
+        x_title = title[0]
+        print(x_title)
+        #Connect MongoDB
+        client = pymongo.MongoClient(self.settings.get("MONGO_URI"))
+        db = client[self.settings.get("MONGO_DATABASE")]
+        collection = db[self.collection_name]
+        Y_title_in_db = collection.find({"title":1,"company":1, "_id":0})
+        #Tach tu
+        X_title_split = [self.word_split(x_title)]
+        Y_title_split = [self.word_split(y) for y in Y_title_in_db]
+        #Chuan hoa ve chu thuong
+        X_title_normalize = [self.word_normalize(x) for x in X_title_split]
+        Y_title_normalize = [self.word_normalize(y) for y in Y_title_split]
+        #Danh chi muc nguoc cho tap y
+        Y_inverted_index = self.invert_index(Y_title_normalize)
+        #Tinh do tuong tu SoftTfIdf
+        softTfIdf = SoftTfIdf(X_title_normalize + Y_title_normalize)
+        #Tim cac chuoi co x khop trong Y
+        Y_size_filtering = self.size_filtering(X_title_normalize[0], Y_title_normalize, self.JACCARD_MEASURE)
+        #Giam so ung cu vien trong tap Y khop voi x(Loai bo cac chuoi y trong Y ko khop voi x)
+        Y_candidates = self.prefix_filtering(Y_inverted_index, X_title_normalize[0], Y_size_filtering, self.PREFIX_FILTERING)
+        flag = False
+        for y in Y_candidates:
+            if softTfIdf.get_raw_score(X_title_normalize[0],y) >= self.SIMILARITY_THRESHOLD:
+                flag = True
+            else:
+                self.item["title"] = title[0]
         #Cong ty
         company = response.xpath('//p[@class="font16"]//a[@class="text_grey3"]/text()').extract()
         if len(company) > 0:
@@ -66,7 +119,7 @@ class Vieclam24hQlSpider(scrapy.Spider):
          #Nganh nghe
         career = response.xpath('//h2[@class="pl_28 font14 fwb"]//a[@class="job_value text_pink"]/text()').extract() 
         if len(career) > 0:
-            self.item["career"] = career[0]
+            self.item["career"] = career
             pass
          #Noi lam viec
         address = response.xpath('//span[@class="pl_28"]//a[@class="job_value text_pink"]/text()').extract()
@@ -102,54 +155,68 @@ class Vieclam24hQlSpider(scrapy.Spider):
 
         #Mo ta
         description =  response.xpath('(//div[@id="ttd_detail"]//div[@class="item row"])[1]//p[@class="col-md-9 pr_0 mb_0 word_break"]/text()').extract()
-        if len(description) > 0:
-            self.item["description"] = description[0]
-            pass
+        self.item["description"] = " ".join([des.strip() for des in description])
         #Quyen loi duoc huong
         benefits = response.xpath('(//div[@id="ttd_detail"]//div[@class="item row"])[2]//p[@class="col-md-9 pr_0 mb_0 word_break"]/text()').extract()
-        if len(benefits) > 0:
-            self.item["benefits"] = benefits[0]
-            pass
+        self.item["benefits"] = " ".join([benefit.strip() for benefit in benefits])
         #Yeu cau khac
-        require_skill = response.xpath('(//div[@id="ttd_detail"]//div[@class="item row"])[3]//p[@class="col-md-9 pr_0 mb_0 word_break"]/text()').extract()
-        if len(require_skill) > 0:
-            self.item["require_skill"] = require_skill[0]
-            pass
+        require_skills = response.xpath('(//div[@id="ttd_detail"]//div[@class="item row"])[3]//p[@class="col-md-9 pr_0 mb_0 word_break"]/text()').extract()
+        self.item["require_skill"] = " ".join([require_skill.strip() for require_skill in require_skills])
         #Thong tin lien he
-        per_contact = response.xpath('(//div[@class="job_description bg_white pl_24 pr_24 mt_16 pb_18 box_shadow"]//div[@class="item row pt_14 pb_14"])[1]//p[@class="col-md-9 pr_0 mb_0"]').extract()
-        add_contact = response.xpath('(//div[@class="job_description bg_white pl_24 pr_24 mt_16 pb_18 box_shadow"]//div[@class="item row pt_14 pb_14"])[2]//p[@class="col-md-9 pr_0 mb_0"]').extract()
-        if len(per_contact) > 0 :
-            pers_contact = re.sub(r'<.*?>', ' ', per_contact[0])
-            pers_contact = re.sub(r'\n', ' ', pers_contact)
-            pers_contact = re.sub(r'\r', ' ', pers_contact)
-            pass
-        else:
-            pers_contact = ""
-        if len(add_contact) > 0:
-            addr_contact = re.sub(r'<.*?>', ' ', add_contact[0])
-            addr_contact = re.sub(r'\n', ' ', addr_contact)
-            addr_contact = re.sub(r'\r', ' ', addr_contact)
-            pass
-        else:
-            addr_contact = ""
-        # contact = pers_contact + "\n" +addr_contact
-        contact = u"Người liên hệ: " + pers_contact + u"Địa chỉ liên hệ: " + addr_contact
+        per_contact = response.xpath('(//div[@class="job_description bg_white pl_24 pr_24 mt_16 pb_18 box_shadow"]//div[@class="item row pt_14 pb_14"])[1]//p[@class="col-md-9 pr_0 mb_0"]/text()').extract()
+        add_contact = response.xpath('(//div[@class="job_description bg_white pl_24 pr_24 mt_16 pb_18 box_shadow"]//div[@class="item row pt_14 pb_14"])[2]//p[@class="col-md-9 pr_0 mb_0"]/text()').extract()
+        
+        contact = u"Người liên hệ: " + per_contact[0].strip() + u" Địa chỉ liên hệ: " + add_contact[0].strip()
         self.item["contact"] = contact
         
         #Han nop ho so
         expired = response.xpath('(//span[@class="text_pink"])[1]/text()').extract() #Het han
         if len(expired) > 0:
-            self.item["expired"] = expired[0][15:]
+            self.item["expired"] = expired[0]
             pass
         #Ngay tao hoso
         created = response.xpath('(//p[@class="text_grey2 font12 mt8 mb12"]//span)[3]/text()').extract() #Ngay tao
         if len(created) > 0:
             created_at = created[0][14:]
-            # replace("Ngày làm mới: ","")
             self.item["created"] = created_at
-        if self.item["title"] != "":
-            yield self.item
-            
+        yield self.item
+    #Tach tu
+    def word_split(self, text):
+        return re.split("[^\w_]+", ViTokenizer.tokenize(text))
+    # Chuan hoa tu ve chu thuong
+    def word_normalize(self, text):
+        return [word.lower() for word in text]
+    # Danh chi muc nguoc cho string
+    def invert_index(self, str_list):
+        inverted = {}
+        for i, s in enumerate(str_list):
+            for word in s:
+                locations = inverted.setdefault(word, [])
+                locations.append(i)
+        return inverted
+    #Tinh size_filtering
+    def size_filtering(self, x, Y, JACCARD_MEASURE):
+        up_bound = len(x) / JACCARD_MEASURE
+        down_bound = len(x) * JACCARD_MEASURE
+        return [y for y in Y if down_bound <= len(y) <= up_bound]
+    #Tinh prefix_filtering
+    def prefix_filtering(self,inverted_index, x, Y, PREFIX_FILTERING):
+        if len(x) >= PREFIX_FILTERING:
+            # Sort x, y in Y
+            x_ = self.sort_by_frequency(inverted_index, x)
+            Y_ = [self.sort_by_frequency(inverted_index, y)[:len(y) - PREFIX_FILTERING + 1] for y in Y if
+                  len(y) >= PREFIX_FILTERING]
+            Y_inverted_index = self.invert_index(Y_)
+            Y_filtered_id = []
+            for x_j in x_[:len(x) - PREFIX_FILTERING + 1]:
+                Y_filtered_id += Y_inverted_index.get(x_j) if Y_inverted_index.get(x_j) is not None else []
+            Y_filtered_id = set(Y_filtered_id)
+            return [Y[i] for i in Y_filtered_id]
+        else:
+            return []
+    def sort_by_frequency(self,inverted_index, arr):
+        return sorted(arr,key=lambda arr_i: len(inverted_index.get(arr_i) if inverted_index.get(arr_i) is not None else []))
+
 
         
 
