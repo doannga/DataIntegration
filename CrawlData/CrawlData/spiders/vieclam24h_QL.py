@@ -8,11 +8,14 @@ from py_stringmatching.similarity_measure.soft_tfidf import SoftTfIdf
 from py_stringmatching.similarity_measure.cosine import Cosine
 import os
 import pymongo
+from collections import defaultdict
+import pybloom_live
 class Vieclam24hQlSpider(scrapy.Spider):
     name = 'vieclam24h_QL'
     start_urls = [
         'https://vieclam24h.vn/tim-kiem-viec-lam-nhanh/?hdn_nganh_nghe_cap1=&hdn_dia_diem=&hdn_tu_khoa=&hdn_hinh_thuc=&hdn_cap_bac=',   
     ]
+    ur = pybloom_live.BloomFilter(capacity=2097152, error_rate=0.005)
     cookies = [
         {
             'gate_nganh': 14,
@@ -49,7 +52,9 @@ class Vieclam24hQlSpider(scrapy.Spider):
         for tn in response.xpath('//div[@class="list-items "]/div/div/span'):
             src = tn.xpath('a/@href').extract_first()
             src = response.urljoin(src)
-            yield scrapy.Request(src, callback=self.parse_src)
+            add_url = self.ur.add(src)
+            if add_url is False:
+                yield scrapy.Request(src, callback=self.parse_src) 
 
         next_pages = response.xpath('//li[@class="next"]/a/@href').extract()
         next_page = next_pages[len(next_pages) - 1]
@@ -64,36 +69,66 @@ class Vieclam24hQlSpider(scrapy.Spider):
         self.item["url"] = response.request.url
         title = response.xpath('//div[@class="col-xs-12"]/h1[@class="text_blue font28 mb_10 mt_20 fws title_big"]/text()').extract()
         x_title = title[0]
-        print(x_title)
+        #Cong ty
+        company = response.xpath('//p[@class="font16"]//a[@class="text_grey3"]/text()').extract()
+        x_company = company[0]
         #Connect MongoDB
         client = pymongo.MongoClient(self.settings.get("MONGO_URI"))
         db = client[self.settings.get("MONGO_DATABASE")]
         collection = db[self.collection_name]
-        Y_title_in_db = collection.find({"title":1,"company":1, "_id":0})
+        Y_title_in_db = list(collection.find({}, {"title":1,"company":1, "_id":0}))
         #Tach tu
         X_title_split = [self.word_split(x_title)]
-        Y_title_split = [self.word_split(y) for y in Y_title_in_db]
+        # Y_title_split = [self.word_split(y.get("title")) for y in Y_title_in_db]
+        X_company_split = [self.word_split(x_company)]
+        # Y_company_split = [self.word_split(y_c.get("company")) for y_c in Y_title_in_db]
+        Y_company_split = []
+        Y_title_split = []
+        for y in Y_title_in_db:
+            y_ti = y['title']
+            y_title_split = self.word_split(y_ti)
+            Y_title_split = y_title_split
+            y_co = y["company"]
+            y_company_split = self.word_split(y_co)
+            Y_company_split = y_company_split
+
         #Chuan hoa ve chu thuong
         X_title_normalize = [self.word_normalize(x) for x in X_title_split]
         Y_title_normalize = [self.word_normalize(y) for y in Y_title_split]
+        X_company_normalize = [self.word_normalize(x) for x in X_company_split]
+        Y_company_normalize = [self.word_normalize(y) for y in Y_company_split]
+
         #Danh chi muc nguoc cho tap y
-        Y_inverted_index = self.invert_index(Y_title_normalize)
+        Y_title_inverted_index = self.invert_index(Y_title_normalize)
+        Y_company_inverted_index = self.invert_index(Y_company_normalize)
+
         #Tinh do tuong tu SoftTfIdf
-        softTfIdf = SoftTfIdf(X_title_normalize + Y_title_normalize)
+        softTfIdf_title = SoftTfIdf(X_title_normalize + Y_title_normalize)
+        softTfIdf_company = SoftTfIdf(X_company_normalize + Y_company_normalize)
         #Tim cac chuoi co x khop trong Y
         Y_size_filtering = self.size_filtering(X_title_normalize[0], Y_title_normalize, self.JACCARD_MEASURE)
+        Y_size_filtering_company = self.size_filtering(X_company_normalize[0], Y_company_normalize, self.JACCARD_MEASURE)
         #Giam so ung cu vien trong tap Y khop voi x(Loai bo cac chuoi y trong Y ko khop voi x)
-        Y_candidates = self.prefix_filtering(Y_inverted_index, X_title_normalize[0], Y_size_filtering, self.PREFIX_FILTERING)
-        flag = False
+        Y_candidates = self.prefix_filtering(Y_title_inverted_index, X_title_normalize[0], Y_size_filtering, self.PREFIX_FILTERING)
+        Y_company_candidates = self.prefix_filtering(Y_company_inverted_index, X_company_normalize[0], Y_size_filtering_company, self.PREFIX_FILTERING)
+        flag_title = False
         for y in Y_candidates:
-            if softTfIdf.get_raw_score(X_title_normalize[0],y) >= self.SIMILARITY_THRESHOLD:
-                flag = True
-            else:
-                self.item["title"] = title[0]
-        #Cong ty
-        company = response.xpath('//p[@class="font16"]//a[@class="text_grey3"]/text()').extract()
-        if len(company) > 0:
-            self.item["company"] = company[0]
+            if softTfIdf_title.get_raw_score(X_title_normalize[0],y) >= self.SIMILARITY_THRESHOLD:
+                flag_title = True
+                break
+        if flag_title == True:
+            flag_company = False
+            for y in Y_company_candidates:
+                if softTfIdf_company.get_raw_score(X_company_normalize[0], y) >= self.SIMILARITY_THRESHOLD:
+                    flag_company = True
+                    break
+            if flag_company == False:
+                self.item["title"] = x_title
+                self.item["company"] = x_company
+        else: 
+            self.item["title"] = x_title
+            self.item["company"] = x_company
+
         #Luong
         salary = response.xpath('//div[@class="col-xs-6"]/p')
         if len(salary) > 0:
@@ -179,7 +214,8 @@ class Vieclam24hQlSpider(scrapy.Spider):
         if len(created) > 0:
             created_at = created[0][14:]
             self.item["created"] = created_at
-        yield self.item
+        if self.item["title"] != None:
+            yield self.item
     #Tach tu
     def word_split(self, text):
         return re.split("[^\w_]+", ViTokenizer.tokenize(text))
