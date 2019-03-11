@@ -34,3 +34,4 @@ class JobItem(scrapy.Item):
     created = scrapy.Field()
     cluster = scrapy.Field()
     pass
+    # Chuan hoa 3 fields: salary, career, address

@@ -18,8 +18,12 @@ for x in X:
 	elif x == 'thương lượng':
 		minSalary = 'thương lượng'
 		maxSalary = 'thương lượng'
-	elif x != 'cạnh tranh' or x != 'thương lượng': 
-		x_split = x.replace(' - ',' ').replace(' – ',' ').replace('trên ','').replace('.','').replace(',','').split(' ')
+	
+	elif x == 'thỏa thuận':
+		minSalary = 'thỏa thuận'
+		maxSalary = 'thỏa thuận'
+	elif x != 'cạnh tranh' or x != 'thương lượng' or x != 'thỏa thuận': 
+		x_split = x.replace(' - ',' ').replace(' – ',' ').replace('trên ','').replace(' trở lên','').replace('.','').replace(',','').split(' ')
 		print(x_split)
 		if x_split is not None and 'triệu' in x_split:
 			x_split.remove('triệu')
@@ -37,6 +41,30 @@ for x in X:
 			else:
 				minSalary = int(x_split[0])*23000
 				maxSalary = int(x_split[1])*23000
+		elif x_split is not None and 'vnđ' in x_split:
+			x_split.remove('vnđ')
+			if(len(x_split) == 1):
+				minSalary = int(x_split[0])
+				maxSalary = minSalary
+			else:
+				minSalary = int(x_split[0])
+				maxSalary = int(x_split[1])
+		elif x_split is not None and 'usd/tháng' in x_split:
+			x_split.remove('usd/tháng')
+			if(len(x_split) == 1):
+				minSalary = int(x_split[0])
+				maxSalary = minSalary
+			else:
+				minSalary = int(x_split[0])
+				maxSalary = int(x_split[1])
+		elif x_split is not None and 'vnd/tháng' in x_split:
+			x_split.remove('vnd/tháng')
+			if(len(x_split) == 1):
+				minSalary = int(x_split[0])
+				maxSalary = minSalary
+			else:
+				minSalary = int(x_split[0])
+				maxSalary = int(x_split[1])
 		else:
 			if x_split is not None:
 				for x_ in x_split:
