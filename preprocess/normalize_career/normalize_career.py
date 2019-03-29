@@ -7,6 +7,7 @@ career_dict = {
 	"thư ký trợ lý": "Hành chính-Văn phòng",
 	"hành chính thư ký": "Hành chính-Văn phòng",
 	"hánh chánh thư ký": "Hành chính-Văn phòng",
+	"thư ký hành chánh": "Hành chính-Văn phòng",
 
 	"kế toán kiểm toán": "Kế toán - Kiểm toán",
 	"Tài chính kế toán kiểm toán": "Kế toán - Kiểm toán",
@@ -15,13 +16,12 @@ career_dict = {
 
 	"thương mại điện tử": "Thương mại điện tử",
 	"internet online media": "Thương mại điện tử",
-	"": "Thương mại điện tử",
-
 	"tài chính đầu tư": "Tài chính - Ngân hàng",
 	"ngân hàng": "Tài chính - Ngân hàng",
 	"đầu tư": "Tài chính - Ngân hàng",
 	"ngân hàng tài chính": "Tài chính - Ngân hàng",
-	"Ngân hàng chứng khoán đầu tư": "Tài chính - Ngân hàng",
+	"ngân hàng chứng khoán đầu tư": "Tài chính - Ngân hàng",
+	"ngân hàng chứng khoán": "Tài chính - Ngân hàng",
 
 	"quản trị kinh doanh": "Quản trị kinh doanh",
 	"kinh tế": "Quản trị kinh doanh",
@@ -40,6 +40,7 @@ career_dict = {
 	"nghiên cứu thị trường": "Marketing - Tiếp thị - Quảng cáo",
 	"quảng cáo khuyến mãi đối ngoại": "Marketing - Tiếp thị - Quảng cáo",
 	"marketing": "Marketing - Tiếp thị - Quảng cáo",
+	"tiếp thị": "Marketing - Tiếp thị - Quảng cáo",
 
 	"bảo hiểm": "Bảo hiểm - Chứng khoán",
 	"chứng khoán vàng": "Bảo hiểm - Chứng khoán",
@@ -54,6 +55,8 @@ career_dict = {
 	"sản xuất vận hành sản xuất": "Sản xuất - Vận hành sản xuất",
 	"khu chế xuất khu công nghiệp": "Sản xuất - Vận hành sản xuất",
 	"sản xuất ": "Sản xuất - Vận hành sản xuất",
+
+	"an toàn lao động": "Nhân viên an toàn lao động",
 
 	"quản lý chất lượng qa qc": "Quản lý chất lượng(QA/QC)",
 	"qa qc thẩm định giám định": "Quản lý chất lượng(QA/QC)",
@@ -81,6 +84,9 @@ career_dict = {
 	"bán hàng": "Nhân viên kinh doanh - Bán hàng - Tư  vấn - CSKH",
 	"dịch vụ khách hàng": "Nhân viên kinh doanh - Bán hàng - Tư  vấn - CSKH",
 	"bán hàng kỹ thuật": "Nhân viên kinh doanh - Bán hàng - Tư  vấn - CSKH",
+	"kinh doanh": "Nhân viên kinh doanh - Bán hàng - Tư  vấn - CSKH",
+	"chăm sóc khách hàng": "Nhân viên kinh doanh - Bán hàng - Tư  vấn - CSKH",
+
 
 	"dịch vụ": "Dịch vụ - Khách sạn - Nhà hàng - Du lịch",
 	"khách sạn nhà hàng": "Dịch vụ - Khách sạn - Nhà hàng - Du lịch",
@@ -89,6 +95,7 @@ career_dict = {
 	"du lịch nhà hàng khách sạn": "Dịch vụ - Khách sạn - Nhà hàng - Du lịch",
 	"du lịch khách sạn": "Dịch vụ - Khách sạn - Nhà hàng - Du lịch",
 	"hàng không du lịch": "Dịch vụ - Khách sạn - Nhà hàng - Du lịch",
+	"nhà hàng dịch vụ ăn uống": "Dịch vụ - Khách sạn - Nhà hàng - Du lịch",
 
 	"tổ chức sự kiện quà tặng": "Tổ chức sự kiện - Quà tặng",
 	"tổ chức sự kiện": "Tổ chức sự kiện - Quà tặng",
@@ -121,6 +128,8 @@ career_dict = {
 	"kỹ thuật ứng dụng": "Cơ khí – Chế tạo – Tự động hoá – Kỹ thuật ứng dụng",
 	"cơ khí": "Cơ khí – Chế tạo – Tự động hoá – Kỹ thuật ứng dụng",
 	"tự động hoá ô tô": "Cơ khí – Chế tạo – Tự động hoá – Kỹ thuật ứng dụng",
+	"ô tô": "Cơ khí – Chế tạo – Tự động hoá – Kỹ thuật ứng dụng",
+
 
 	"điện điện tử điện lạnh": "Điện – điện tử - điện lạnh",
 	"điện điện công nghiệp": "Điện – điện tử - điện lạnh",
@@ -176,6 +185,7 @@ career_dict = {
 	"kiến trúc thiết kế nội thất": "Kiến trúc – Thiết kế nội thất",
 	"kiến trúc nội thất": "Kiến trúc – Thiết kế nội thất",
 	"trang trí nội thất": "Kiến trúc – Thiết kế nội thất",
+	"nội thất ngoại thất": "Kiến trúc – Thiết kế nội thất",
 
 	"thuỷ lợi": "Giao thông vận tải – Thủy lợi - Cầu đường",
 	"giao thông vận tải thuỷ lợi cầu đường": "Giao thông vận tải – Thủy lợi - Cầu đường",
@@ -196,12 +206,15 @@ career_dict = {
 	"giải trí": "Giải trí",
 	"thể dục thể thao": "Giải trí",
 	"giải trí vui chơi": "Giải trí",
+	"nghệ thuật thiết kế giải trí": "Giải trí",
 
 	"biên phiên dịch": "Biên – Phiên dịch",
 	"phiên dịch ngoại ngữ": "Biên – Phiên dịch",
 	"biên dịch phiên dịch": "Biên – Phiên dịch",
 	"ngoại ngữ": "Biên – Phiên dịch",
 	"ngoại ngữ biên phiên dịch": "Biên – Phiên dịch",
+	"biên phiên dịch tiếng nhật": "Biên – Phiên dịch",
+	"biên phiên dịch thông dịch viên": "Biên – Phiên dịch",
 
 	"báo chí truyền hình": "Báo chí – tuyên truyền",
 	"truyền hình báo chí biên tập": "Báo chí – tuyên truyền",
@@ -209,7 +222,7 @@ career_dict = {
 	"báo chí biên tập viên": "Báo chí – tuyên truyền",
 	"báo chí biên tập": "Báo chí – tuyên truyền",
 	"truyền hình truyền thông báo chí": "Báo chí – tuyên truyền",
-	"": "Báo chí – tuyên truyền",
+	"báo chí biên tập viên xuất bản": "Báo chí – tuyên truyền",
 	"": "Báo chí – tuyên truyền",
 
 	"quan hệ đối ngoại": "Quan hệ đối ngoại",
@@ -222,6 +235,10 @@ career_dict = {
 	"công nghệ sinh học": "Hóa học – Sinh học",
 	"dược hoá chất sinh hoá": "Hóa học – Sinh học",
 	"hoá học hoá sinh": "Hóa học – Sinh học",
+	"dược hóa chất sinh hóa": "Hóa học – Sinh học",
+	"dược sinh học": "Hóa học – Sinh học",
+	"hoá chất sinh hoá thực phẩm": "Hóa học – Sinh học",
+
 
 	"môi trường": "Môi trường – Xử lý chất thải",
 	"môi trường xử lý chất thải": "Môi trường – Xử lý chất thải",
@@ -236,6 +253,7 @@ career_dict = {
 	"y sĩ hộ lý": "Y tế - dược",
 	"dược sĩ": "Y tế - dược",
 	"trình dược viên": "Y tế - dược",
+	"chăm sóc sức khoẻ y tế": "Y tế - dược",
 
 	"giáo dục đào tạo": "Sư phạm",
 	"thư viện": "Sư phạm",
@@ -248,6 +266,7 @@ career_dict = {
 	"chăn nuôi thú y": "Nông - Lâm - Ngư nghiệp",
 	"nông lâm": "Nông - Lâm - Ngư nghiệp",
 	"nông nghiệp lâm nghiệp": "Nông - Lâm - Ngư nghiệp",
+	"thuỷ hải sản": "Nông - Lâm - Ngư nghiệp",
 
 	"an ninh bảo vệ": "An ninh – bảo vệ",
 	"bảo vệ an ninh vệ sỹ": "An ninh – bảo vệ",
@@ -271,13 +290,17 @@ career_dict = {
 	"bưu chính vt": "Bưu chính - Giao vận - Kho vận - Vật tư",
 	"vận chuyển giao nhận": "Bưu chính - Giao vận - Kho vận - Vật tư",
 	"kho vận": "Bưu chính - Giao vận - Kho vận - Vật tư",
-	"thu Mua vật tư cung vận": "Bưu chính - Giao vận - Kho vận - Vật tư",
+	"thu mua vật tư cung vận": "Bưu chính - Giao vận - Kho vận - Vật tư",
+	"vật tư mua hàng": "Bưu chính - Giao vận - Kho vận - Vật tư",
+	"vận chuyển giao thông kho bãi": "Bưu chính - Giao vận - Kho vận - Vật tư",
 
 	"spa mỹ phẩm trang sức": "Spa-Mỹ phẩm-Trang sức",
 	"mỹ phẩm trang sức": "Spa-Mỹ phẩm-Trang sức",
 	"làm đẹp thể lực spa": "Spa-Mỹ phẩm-Trang sức",
 	"mỹ phẩm thời trang trang sức": "Spa-Mỹ phẩm-Trang sức",
 	"mỹ phẩm": "Spa-Mỹ phẩm-Trang sức",
+	"": "Spa-Mỹ phẩm-Trang sức",
+
 
 	"người giúp việc phục vụ tạp vụ": "Giúp việc - Phục vụ",
 	"nhân viên trông quán internet": "Giúp việc - Phục vụ",
@@ -296,7 +319,8 @@ career_dict = {
 	"sinh viên làm thêm": "Khác",
 	"việc làm tết": "Khác",
 	"thời vụ bán thời gian": "Khác",
-	"sinh viên mới tốt nghiệp thực tập": "Khác"
+	"sinh viên mới tốt nghiệp thực tập": "Khác",
+	"người nước ngoài": "Khác"
 }
 with open('/home/nga/Documents/Project/DataIntegration/CrawlData/CrawlData/vieclam24h2.json', encoding='utf-8-sig') as f1:
     X = json.loads(f1.read())
@@ -305,13 +329,14 @@ with open('/home/nga/Documents/Project/DataIntegration/CrawlData/CrawlData/viecl
 for careers in X:
 	ca = []
 	careers = careers.get("career")
+	print(careers)
 	for x in careers:
-		x = x.lower().replace("-"," ").replace("/"," ")
+		x = x.lower().replace("-"," ").replace("/"," ").replace("("," ").replace(")"," ").replace(","," ").lstrip()
 		career = re.sub("\s\s+" , " ", x)
+		print(career)
 		# print(career)
 		if career in career_dict:
 			ca.append(career_dict[career])
-			print(career_dict[career])
 	care = list(dict.fromkeys(ca))
 	print(care)
 	print("------------")

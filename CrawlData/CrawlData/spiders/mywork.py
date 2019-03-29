@@ -2,10 +2,27 @@
 import scrapy
 from CrawlData.items import JobItem
 import re
-
+import time
+from pyvi import ViTokenizer
+from py_stringmatching.similarity_measure.soft_tfidf import SoftTfIdf
+from py_stringmatching.similarity_measure.cosine import Cosine
+import os
+import pymongo
+from collections import defaultdict
+import pybloom_live
+from CrawlData.remove_duplicate import DataReduction
+from CrawlData.normalize_salary import Normalize_salary
+from CrawlData.normalize_careers import Normalize_careers
+import settings
 class MyworkSpider(scrapy.Spider):
     name = 'mywork'
     start_urls = ['https://mywork.com.vn/tuyen-dung/']
+    collection_name = 'News'
+    client = pymongo.MongoClient(settings.MONGO_URI)
+    db = client[settings.MONGO_DATABASE]
+    collection = db[collection_name]
+    Y_in_db = list(collection.find({}, {"title":1,"company":1, "address":1, "_id":0}))
+    no_duplicate_items = 0
 
     def parse(self, response):
         for tn in response.xpath('//div[@class="row job-item"]/div/div/div/p'):
@@ -23,56 +40,83 @@ class MyworkSpider(scrapy.Spider):
         self.item = JobItem()
         self.item["url"] = response.request.url
         title = response.xpath('//h1[@class="main-title"]//span/text()').extract()
+        x_title = title[0].strip()
         if len(title) > 0:
-            self.item["title"] = title[0]
+            self.item["title"] = x_title
 
         #Cong ty
         company = response.xpath('(//h2[@class="desc-for-title mb-15"]//span)[1]/text()').extract()
+        x_company = company[0].strip()
         if len(company) > 0:
-            self.item["company"] = company[0]
+            self.item["company"] = x_company
+         #Noi lam viec
+        address = response.xpath('//span[@class="el-tag location_tag el-tag--primary"]//a/text()').extract()
+        x_address = ", ".join([add.strip() for add in address])
+        if len(address) > 0:
+            self.item["address"] = x_address
+        #Check duplicate 
+        data_need_check = DataReduction(3, [[job['title'], job['company'], job['address']] for job in self.Y_in_db])      
+        if data_need_check.is_match([x_title, x_company, x_address]):
+            self.no_duplicate_items += 1
+            print(self.no_duplicate_items)
+            return
         #Luong
-        salary = response.xpath('//div[@class="col-xs-6"]/p')
+        salary = response.xpath('//span[@class="text_red"]/text()')
         if len(salary) > 0:
-            salary = salary[0].xpath('//span[@class="text_red"]/text()').extract()
-            if len(salary) > 0:
-                self.item["salary"] = re.sub(r'<.*?>', '. ',salary[0])
+            salary_str = " ".join(salary)
+            salary_need_normalize = Normalize_salary()
+            salary_normalized = salary_need_normalize.normalize_salary(salary_str)
+            self.item["salary"] = salary_normalized
+        else:
+            self.item["salary"] = 'Thỏa thuận'
+        #Nganh nghe
+        career = response.xpath('//span[@class="el-tag el-tag--primary"]//a/text()').extract() 
+        career_need_nomarlize = Normalize_careers()
+        career_normalized = career_need_nomarlize.normalize_careers(career)
+        self.item["career"] = career_normalized
 
         #Kinh nghiem    
         experience = response.xpath('(//div[@class="item item1"]//p)[1]/text()').extract()
         if len(experience) > 0:
-            self.item["experience"] = experience[0]
-            pass
-         # Bang cap
-        diploma = response.xpath('(//div[@class="item item1"]//p)[2]/text()').extract()
+            self.item["experience"] = experience[0].strip()
+        else:
+            self.item['experience'] = "Không yêu cầu"
+        #Yeu cau khac
+        require_skill1 = response.xpath('(//div[@class="mw-box-item"])[3]/text()').extract()
+        require_skill2 = response.xpath('(//div[@class="mw-box-item"])[4]/text()').extract()
+        require_skill = require_skill11.extend(require_skill2)
+        if len(require_skill) > 0:
+            self.item["require_skill"] = ", ".join([re_sk.strip() for re_sk in require_skill])
+        else:
+            self.item['require_skill'] = "Không yêu cầu"
+        # Bang cap
+        diploma = [info_other.strip() for info_other in require_skill if
+                   "bằng cấp" in info_other.lower() or "tốt nghiệp" in info_other.lower()] 
         if len(diploma) > 0:
-            self.item["diploma"] = diploma[0]
-            pass
+            self.item['diploma'] = diploma[0].split(':')[-1].strip()
+        else:
+            self.item['diploma'] = 'Không yêu cầu'
          #So luong
         amount = response.xpath('(//div[@class="item item1"]//p)[3]/text()').extract()
         if len(amount) > 0:
-            self.item["amount"] = amount[0]
-            pass
-         #Nganh nghe
-        career = response.xpath('//span[@class="el-tag el-tag--primary"]//a/text()').extract() 
-        if len(career) > 0:
-            self.item["career"] = career[0].strip()
-            pass
-         #Noi lam viec
-        address = response.xpath('//span[@class="el-tag location_tag el-tag--primary"]//a/text()').extract()
-        if len(address) > 0:
-            self.item["address"] = address[0].strip()
-            pass
+            self.item["amount"] = amount[0].strip()
+        else:
+            self.item['amount'] = 'Không yêu cầu'
+        
+        
          # Chuc vu   
         position = response.xpath('(//div[@class="item item2"]//p)[2]/text()').extract()
         if len(position) > 0:
-            self.item["position"] = position[0]
-            pass
+            self.item["position"] = position[0].strip()
+        else:
+            self.item['amount'] = 'Không yêu cầu'
 
         #Hinh thuc lam viec fulltime/parttime
         category = response.xpath('(//div[@class="item item2"]//p)[1]/text()').extract()
         if len(category) > 0:
-            self.item["category"] = category[0]
-            pass
+            self.item["category"] = category[0].strip()
+        else:
+            self.item['category'] = 'Không yêu cầu'
         #Thoi gian thu viec
         trial_time = ""
         self.item["trial_time"] = trial_time
@@ -95,20 +139,7 @@ class MyworkSpider(scrapy.Spider):
         if len(benefits) > 0:
             self.item["benefits"] = benefits[0]
             pass
-        #Yeu cau khac
-        require_skill1 = response.xpath('(//div[@class="mw-box-item"])[3]/text()').extract()
-        require_skill2 = response.xpath('(//div[@class="mw-box-item"])[4]/text()').extract()
-        if len(require_skill1) > 0:
-            require_skill11 = require_skill1[0]
-            pass
-        else:
-        	require_skill11 = ""
-        if len(require_skill2) > 0:
-            require_skill22 = require_skill2[0]
-            pass
-        else:
-            require_skill22 = ""
-        self.item["require_skill"] = require_skill11 + "\n" +require_skill22
+        
         #Thong tin lien he
         per_contact = response.xpath('(//div[@class="col-md-6 col-lg-9 item"]//span)[1]/text()').extract()
         add_contact = response.xpath('(//div[@class="col-md-6 col-lg-9 item"]//span)[2]/text()').extract()
